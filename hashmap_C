@@ -1,0 +1,136 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define TABLE_SIZE 1000
+
+struct pair
+{
+    char *key;
+    int value;
+    struct pair *next;
+};
+
+struct hashmap
+{
+    struct pair *table[TABLE_SIZE];
+};
+
+unsigned long hash(char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *str++))
+    {
+        hash = ((hash << 5) + hash) + c;
+    }
+
+    return hash % TABLE_SIZE;
+}
+
+struct hashmap *create_map()
+{
+    struct hashmap *map = malloc(sizeof(struct hashmap));
+    memset(map, 0, sizeof(struct hashmap));
+    return map;
+}
+
+void put(struct hashmap *map, char *key, int value)
+{
+    unsigned long index = hash(key);
+
+    struct pair *pair = map->table[index];
+    while (pair != NULL)
+    {
+        if (strcmp(pair->key, key) == 0)
+        {
+            pair->value = value;
+            return;
+        }
+        pair = pair->next;
+    }
+
+    pair = malloc(sizeof(struct pair));
+    pair->key = strdup(key);
+    pair->value = value;
+    pair->next = map->table[index];
+    map->table[index] = pair;
+}
+
+int get(struct hashmap *map, char *key)
+{
+    unsigned long index = hash(key);
+
+    struct pair *pair = map->table[index];
+    while (pair != NULL)
+    {
+        if (strcmp(pair->key, key) == 0)
+        {
+            return pair->value;
+        }
+        pair = pair->next;
+    }
+
+    return -1;
+}
+
+void remove_key(struct hashmap *map, char *key)
+{
+    unsigned long index = hash(key);
+
+    struct pair *pair = map->table[index];
+    struct pair *prev = NULL;
+    while (pair != NULL)
+    {
+        if (strcmp(pair->key, key) == 0)
+        {
+            if (prev == NULL)
+            {
+                map->table[index] = pair->next;
+            }
+            else
+            {
+                prev->next = pair->next;
+            }
+            free(pair->key);
+            free(pair);
+            return;
+        }
+        prev = pair;
+        pair = pair->next;
+    }
+}
+
+void print_map(struct hashmap *map)
+{
+    for (int i = 0; i < TABLE_SIZE; i++)
+    {
+        struct pair *pair = map->table[i];
+        while (pair != NULL)
+        {
+            printf("%s: %d\n", pair->key, pair->value);
+            pair = pair->next;
+        }
+    }
+}
+
+int main()
+{
+    struct hashmap *map = create_map();
+
+    put(map, "one", 1);
+    put(map, "two", 2);
+    put(map, "three", 3);
+    put(map, "four", 4);
+    put(map, "five", 5);
+
+    printf("Value of key 'two': %d\n", get(map, "two"));
+
+    remove_key(map, "three");
+
+    printf("Map contents:\n");
+    print_map(map);
+
+    return 0;
+}
